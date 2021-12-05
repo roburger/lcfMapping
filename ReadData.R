@@ -3,25 +3,29 @@
 # Read in data
 
 # Set working directory
-setwd("~/Thesis/code")
+setwd("~/Thesis/code/lcfMapping/")
 
 # Import packages
 library(sf)
 library(dplyr)
 library(pbapply)
 
+# Link to data folder
+linkData <- "C:/Users/robur/Documents/Thesis/code/data/"
+
 # Retrieve band layers
-linkData <- "./data/raw/IIASATraining2015_Landsat8_TS.gpkg"
-nameBands <- st_layers(linkData)
+#linkData <- "C:/Users/robur/Documents/Thesis/code/data/raw/IIASATraining2015_Landsat8_TS.gpkg"
+linkLandsatIIASA2015 <- paste0(linkData, "raw/IIASATraining2015_Landsat8_TS.gpkg")
+nameBands <- st_layers(linkLandsatIIASA2015)
 
 # Read in data per band
-b1Landsat <- st_read(linkData, nameBands$name[1])
-b2Landsat <- st_read(linkData, nameBands$name[2])
-b3Landsat <- st_read(linkData, nameBands$name[3])
-b4Landsat <- st_read(linkData, nameBands$name[4])
-b5Landsat <- st_read(linkData, nameBands$name[5])
-b6Landsat <- st_read(linkData, nameBands$name[6])
-b7Landsat <- st_read(linkData, nameBands$name[7])
+b1Landsat <- st_read(linkLandsatIIASA2015, nameBands$name[1])
+b2Landsat <- st_read(linkLandsatIIASA2015, nameBands$name[2])
+b3Landsat <- st_read(linkLandsatIIASA2015, nameBands$name[3])
+b4Landsat <- st_read(linkLandsatIIASA2015, nameBands$name[4])
+b5Landsat <- st_read(linkLandsatIIASA2015, nameBands$name[5])
+b6Landsat <- st_read(linkLandsatIIASA2015, nameBands$name[6])
+b7Landsat <- st_read(linkLandsatIIASA2015, nameBands$name[7])
 
 # Explore data
 names(b1Landsat)
@@ -72,7 +76,8 @@ pbapply(as.matrix(ndvi), 2, median, cl=NULL, na.rm=T)
 plot(as.numeric(ndvi[1,]))
 
 save(ndvi,file="./data/processed/ndvi.Rda")
-load("./data/processed/ndvi.Rda")
+#load("./data/processed/ndvi.Rda")
+load(paste0(linkData,"processed/ndvi.Rda"))
 
 
 # until 191, to exclude the geometry
@@ -86,6 +91,7 @@ swirBand <- b6Landsat[,4:194]
 ndmi <- (nirBand - swirBand) / (nirBand + swirBand)
 ndmiMedian = pbapply(as.matrix(as.data.frame(ndmi[,1:191])), 1, median, na.rm=T)
 save(ndmi,file="./data/processed/ndmi.Rda")
+load(paste0(linkData,"processed/ndmi.Rda"))
 
 # EVI
 blueBand <- b2Landsat[,4:194]
