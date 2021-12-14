@@ -1,6 +1,6 @@
 # MSc Thesis
 # 29/11/2021
-# Read in data
+# Temporal Filter
 
 # Set working directory
 setwd("~/Thesis/code/lcfMapping/")
@@ -8,11 +8,28 @@ setwd("~/Thesis/code/lcfMapping/")
 # Import packages
 library(sf)
 
+source("utils/filterBands.R")
+b1Test
+lapply(as.matrix(b1Test[1:100,]), filterBands)
+lapply(X = b1Landsat, FUN = filterBands)
+
+b1Filtered <- filterBands(b1Landsat, smoothLoessPlot, dates)
+mean(is.na(b1Filtered))
+mean(is.na(b1Values[1:100,]))
+
+b2Filtered <- filterBands(b2Landsat, smoothLoessPlot, dates)
+#ColDates niet hetzelfde
+mean(is.na(b2Filtered))
+mean(is.na(b2Test[1:100,]))
+
+
 # Get Dates
 source("utils/extractDates.R")
 dates = extractDates()
 dates
 ColDates = paste0("X", gsub("-", ".", dates), "_SR_B1")
+NewColDates = paste0("X", gsub("-", ".", dates))
+colnames(b1Test[,ColDates]) = NewColDates
 
 ## Test Temporal Filtering and Parameters ##
 TestTS = sample(1:nrow(b1Landsat), 50)
@@ -45,8 +62,9 @@ b1Test = b1Landsat
 st_geometry(b1Test) <- NULL
 
 DFcoords = b1Test[c("x","y")]
+write.csv(DFcoords, paste0(linkData, "processed/IIASAtrainingCoords.csv"), row.names=F)
 coords = c("x","y")
-b1Test = b1Test[,ColDates]
+b1Values = b1Test[,ColDates]
 
 tempSF = st_as_sf(b1Test, coords=coords, dim="XY", remove=FALSE, crs=4326)
 names(tempSF)[names(tempSF) == "geometry"] = "geom"
@@ -55,7 +73,7 @@ st_write(tempSF, "C:/Users/robur/Documents/Thesis/code/data/processed/testSF.gpk
 #Dit boven werkt goed, TODO now: write forloop for filter and writing to gpkg layers.
 
 ## Test results ##
-mean(is.na(b1Test[1:10000,]))
+mean(is.na(b1Test[1:1000,]))
 mean(is.na(b1MaskTest))
 mean(colMeans(is.na(b1MaskTest)))
 sum(is.na(b1Test[1:10000,]) != is.na(b1MaskTest)) / length(b1MaskTest)
