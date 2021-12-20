@@ -5,6 +5,9 @@
 # Set working directory
 setwd("~/Thesis/code/lcfMapping/")
 
+# Set libraries
+library(sf)
+
 # Link to data and utils
 InputLink = "../data/processed/IIASAtrainingFiltered.gpkg"
 OutputLink = "../data/processed/IIASAtrainingVIs.gpkg"
@@ -45,4 +48,12 @@ plot(as.numeric(ndvi[1,]))
 # Store NDVI
 ndviSF <- DFtoSF(ndvi)
 st_write(ndviSF, OutputLink, "NDVI")
+
+# Read NDVI
+ndvi = st_read(OutputLink, "NDVI")
+st_geometry(ndvi) = NULL
+ndvi = ndvi[,NewColDates]
+
+
+# NDBI #
 
