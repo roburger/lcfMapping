@@ -36,7 +36,7 @@ all(samplePoints$location_id %in% harmonics$location_id)
 # cbind will not work here, because they are not ordered the same
 
 # Use selection
-n=100000
+n=50000
 chosen = sample(unique(samplePoints$location_id), n)
 
 ransubsetY = subset(samplePoints, location_id %in% chosen)[,c("location_id","tree")]
@@ -66,6 +66,8 @@ all(testX$location_id %in% testY$location_id)
 all(testY$location_id %in% testX$location_id)
 
 # Replace NA values with -9999
+sum(is.na(dataTrain))
+sum(is.na(testX))
 dataTrain[is.na(dataTrain)] = -9999
 testX[is.na(testX)] = -9999
 
@@ -82,7 +84,7 @@ compareDF = data.frame(location_id=testY$location_id,
 sqrt(mean((compareDF$pred-compareDF$actual)^2)) #RMSE: 35.3 -> 34.1 (n=10.000)
 mean(abs(compareDF$pred-compareDF$actual)) #MAE: 31.3 -> 27.2 (n=10.000)
 # n=100.000 RMSE=47.2 MAE=36.1
-
+# n=length(0<tree<100)=47679 RMSE=37.9 MAE=31.3
 
 
 # # 
@@ -117,6 +119,9 @@ chosen= samplePoints$location_id[1:100000]
 # try below to exclude 0's and 100's
 chosen = samplePoints[samplePoints$tree>0&samplePoints$tree<100,"location_id"]
 n = length(chosen)
+#sample 10.000 from above (0<tree<100)
+chosen = sample(unique(samplePoints[samplePoints$tree>0&samplePoints$tree<100,"location_id"]),10000)
+n=10000
 
 ransubsetY = subset(samplePoints, location_id %in% chosen)[,c("location_id","tree")]
 ransubsetX = subset(harmonics, location_id %in% chosen)
@@ -184,3 +189,12 @@ samplePoints[which(samplePoints$location_id == head(chosen, 5))[1], "tree"]
 library(varImp)
 varImp(rfmodel)
 rfmodel$variable.importance
+
+# try histograms
+hist(compareDF$actual, breaks = 100)
+val = hist(compareDF$actual, breaks = 100)
+val$counts
+hist(compareDF$pred, breaks = 100)
+
+plot(density(compareDF$actual),col='red')
+lines(density(compareDF$pred),col='blue')
