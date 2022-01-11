@@ -36,12 +36,13 @@ all(samplePoints$location_id %in% harmonics$location_id)
 # cbind will not work here, because they are not ordered the same
 
 # Use selection
-n=50000
+n=100000
 chosen = sample(unique(samplePoints$location_id), n)
 
 ransubsetY = subset(samplePoints, location_id %in% chosen)[,c("location_id","tree")]
 ransubsetX = subset(harmonics, location_id %in% chosen)
 all(ransubsetY$location_id %in% ransubsetX$location_id)
+all(ransubsetX$location_id %in% ransubsetY$location_id)
 
 # split into training and test set
 id80 = sample(unique(chosen),0.8*n)
@@ -77,18 +78,57 @@ rfmodel = ranger(dataTrain$tree ~ ., data=dataTrain[!names(dataTrain) %in% c("tr
 
 output = predict(rfmodel, testX[!names(testX) %in% c("location_id","x","y")])
 
-# compare predictions with testY
-compareDF = data.frame(location_id=testY$location_id, 
-                       actual=testY$tree, pred=output$predictions)
+# output$predictions and testY not have same locationID, wrong compareDF?
+temp = data.frame(location_id=testX$location_id, pred=output$predictions)
+all(testY$location_id %in% temp$location_id)
+compareDF = merge(testY, temp)
+rm(temp)
 
-sqrt(mean((compareDF$pred-compareDF$actual)^2)) #RMSE: 35.3 -> 34.1 (n=10.000)
-mean(abs(compareDF$pred-compareDF$actual)) #MAE: 31.3 -> 27.2 (n=10.000)
+# Accuracy Assessment RMSE MAE
+sqrt(mean((compareDF$pred-compareDF$tree)^2)) #RMSE: 35.3 -> 34.1 (n=10.000)
+mean(abs(compareDF$pred-compareDF$tree)) #MAE: 31.3 -> 27.2 (n=10.000)
 # n=100.000 RMSE=47.2 MAE=36.1
 # n=length(0<tree<100)=47679 RMSE=37.9 MAE=31.3
-
+# n=50.000 RMSE=25.5 MAE=17.7
 
 # # 
 # Try-out below
+
+# Check NA's per columns
+apply(harmonics, 2, function(x){sum(is.na(x))}) / nrow(harmonics) * 100
+
+# TidyData check
+DropRows = apply(harmonics, 1, function(x){any(!is.finite(x))})
+sum(DropRows)
+nrow(temp[!DropRows,])
+nrow(temp[DropRows,])
+
+# Try to merge samplePoints and Harmonics
+temp = merge(samplePoints,harmonics)
+apply(temp, 2, function(x){sum(is.na(x))}) / nrow(temp) * 100
+DropRows = apply(temp[,colnames(harmonics)], 1, function(x){any(!is.finite(x))})
+temp = temp[!DropRows,]
+all(apply(temp, 2, function(x){sum(is.na(x))}) / nrow(temp) * 100 == 0)
+
+temp = temp[temp$dominant_lc != "not_sure",]
+
+
+#temp = merge(samplePoints,harmonics, by="location_id")
+
+subset(samplePoints, !(samplePoints$y %in% temp$y))$y
+subset(samplePoints, !(samplePoints$x %in% temp$x))$x
+#subset(samplePoints, !(samplePoints$location_id %in% temp$location_id))$location_id
+
+subset(harmonics, !(harmonics$y %in% temp$y))$y
+subset(harmonics, !(harmonics$x %in% temp$x))$x
+#subset(harmonics, !(harmonics$location_id %in% temp$location_id))$location_id
+
+subset(harmonics, !(harmonics$y %in% samplePoints$y))$y
+subset(harmonics, !(harmonics$x %in% samplePoints$x))$x
+coordsData = read.csv(paste0(linkData, "processed/IIASAtrainingCoords.csv"))
+
+
+##
 colnames(samplePoints)
 
 all(samplePoints$x %in% harmonics$x)
@@ -191,10 +231,13 @@ varImp(rfmodel)
 rfmodel$variable.importance
 
 # try histograms
-hist(compareDF$actual, breaks = 100)
+hist(compareDF$tree, breaks = 100, xlab = "actual", main = "Histogram of actual")
 val = hist(compareDF$actual, breaks = 100)
 val$counts
-hist(compareDF$pred, breaks = 100)
+hist(compareDF$pred, breaks = 100, xlab = "predicted", main = "Histogram of predictions")
 
-plot(density(compareDF$actual),col='red')
+plot(density(compareDF$tree),col='red', main="Kernel density plot", xlab="Red: actual, Blue: predicted")
 lines(density(compareDF$pred),col='blue')
+
+plot(compareDF$pred,compareDF$actual)
+plot(tempCompare$pred, tempCompare$tree, xlab="Predicted", ylab="Actual")
