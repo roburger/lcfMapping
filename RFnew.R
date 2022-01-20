@@ -32,15 +32,19 @@ harmonics = cbind(locationID,harmonics)
 rm(locationID)
 all(samplePoints$location_id %in% harmonics$location_id)
 
+training = cbind(harmonics,iqr)
+training = cbind(training, median)
+training = harmonics
 # now try to match samplePoints with harmonics based on locationID
 # cbind will not work here, because they are not ordered the same
 
 # Use selection
-n=100000
+n=150000
 chosen = sample(unique(samplePoints$location_id), n)
 
 ransubsetY = subset(samplePoints, location_id %in% chosen)[,c("location_id","tree")]
-ransubsetX = subset(harmonics, location_id %in% chosen)
+#ransubsetX = subset(harmonics, location_id %in% chosen)
+ransubsetX = subset(training, location_id %in% chosen)
 all(ransubsetY$location_id %in% ransubsetX$location_id)
 all(ransubsetX$location_id %in% ransubsetY$location_id)
 
@@ -74,7 +78,8 @@ testX[is.na(testX)] = -9999
 
 # Train RF model
 print("Training the model...")
-rfmodel = ranger(dataTrain$tree ~ ., data=dataTrain[!names(dataTrain) %in% c("tree","location_id","x","y")])
+rfmodel = ranger(dataTrain$tree ~ ., importance = "impurity",
+                 data=dataTrain[!names(dataTrain) %in% c("tree","location_id","x","y")])
 
 output = predict(rfmodel, testX[!names(testX) %in% c("location_id","x","y")])
 
@@ -90,6 +95,11 @@ mean(abs(compareDF$pred-compareDF$tree)) #MAE: 31.3 -> 27.2 (n=10.000)
 # n=100.000 RMSE=47.2 MAE=36.1
 # n=length(0<tree<100)=47679 RMSE=37.9 MAE=31.3
 # n=50.000 RMSE=25.5 MAE=17.7
+
+# n=12.000 RMSE=24.0 MAE=15.7 (with IQR and median NDVI)
+
+
+
 
 # # 
 # Try-out below
@@ -239,5 +249,7 @@ hist(compareDF$pred, breaks = 100, xlab = "predicted", main = "Histogram of pred
 plot(density(compareDF$tree),col='red', main="Kernel density plot", xlab="Red: actual, Blue: predicted")
 lines(density(compareDF$pred),col='blue')
 
-plot(compareDF$pred,compareDF$actual)
+plot(compareDF$pred,compareDF$tree, xlab = "actual", ylab = "predicted")
+lines(c(1:100),c(1:100), col="red", lwd = 2)
+
 plot(tempCompare$pred, tempCompare$tree, xlab="Predicted", ylab="Actual")

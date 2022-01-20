@@ -52,8 +52,19 @@ st_write(ndviSF, OutputLink, "NDVI")
 # Read NDVI
 ndvi = st_read(OutputLink, "NDVI")
 st_geometry(ndvi) = NULL
+ndviComplete = ndvi
 ndvi = ndvi[,NewColDates]
-
 
 # NDBI #
 
+
+# NDVI stats
+head(as.numeric(apply(ndvi, 1, mean, na.rm=T)), 5)
+ndvi[1,]
+mean(as.numeric(ndvi[3,]), na.rm=T)
+IQR(as.numeric(ndvi[3,]), na.rm=T)
+
+temp = as.numeric(apply(ndvi, 1, IQR, na.rm=T))
+iqr = data.frame(IQR=temp)
+temp = as.numeric(apply(ndvi, 1, median, na.rm=T))
+median = data.frame(medianNDVI=temp)
