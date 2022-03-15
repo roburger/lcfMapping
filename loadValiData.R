@@ -55,6 +55,7 @@ NewColDates = paste0("X", gsub("-", ".", dates))
 colnames(b1Test)= NewColDates
 
 b4Validation = b4Validation[,4:194]
+b4Validation = b4Validation[,colnames(b4Validation)[grepl("201|202", colnames(b4Validation))]] # subset 2010 and 2020 TS columns
 colnames(b4Validation) = NewColDates
 
 # Temporal filter
