@@ -14,6 +14,10 @@ InputLink = "../data/processed/IIASAtrainingFiltered.gpkg"
 OutputLink = "../data/processed/IIASAtrainingVIs.gpkg"
 source("utils/dataManagement.R")
 
+# Get Dates
+source("utils/extractDates.R")
+dates = extractDates()
+NewColDates = paste0("X", gsub("-", ".", dates))
 
 # Loop over the GPKG layers to extract the bands timeseries
 for (band in c(paste0("b", 1:7))){
@@ -23,7 +27,7 @@ for (band in c(paste0("b", 1:7))){
   
   # Convert SF to DF
   st_geometry(InputSF) = NULL
-  InputSF = InputSF[,NewColDates]
+  #InputSF = InputSF[,NewColDates]
   
   # Assign new name
   assign(paste0(band, "_TS"), InputSF)
