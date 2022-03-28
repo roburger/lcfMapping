@@ -1,107 +1,149 @@
 # MSc Thesis
-# 29/11/2021
-# Temporal Filter
+# Start: 13/12/2021
+# Modified: 28/03/2022
+# Apply temporal filter
 
 # Set working directory
 setwd("~/Thesis/code/lcfMapping/")
 
 # Import packages
 library(sf)
-
+library(dplyr)
+library(pbapply)
+source("utils/extractDates.R")
 source("utils/filterBands.R")
-b1Test
-lapply(as.matrix(b1Test[1:100,]), filterBands)
-lapply(X = b1Landsat, FUN = filterBands)
 
-b1Filtered <- filterBands(b1Landsat, smoothLoessPlot, dates)
-mean(is.na(b1Filtered))
-mean(is.na(b1Values[1:100,]))
 
-b2Filtered <- filterBands(b2Landsat, smoothLoessPlot, dates)
-#ColDates niet hetzelfde
-mean(is.na(b2Filtered))
-mean(is.na(b2Test[1:100,]))
+# Link to data folder
+linkData <- "C:/Users/robur/Documents/Thesis/code/data/"
 
+# Retrieve band layers
+linkLandsatIIASA2015 <- paste0(linkData, "raw/IIASATraining2015_Landsat8_TS.gpkg")
+nameBands <- st_layers(linkLandsatIIASA2015)
+
+# Read in data per band
+b1Landsat <- st_read(linkLandsatIIASA2015, nameBands$name[1])
+b2Landsat <- st_read(linkLandsatIIASA2015, nameBands$name[2])
+b3Landsat <- st_read(linkLandsatIIASA2015, nameBands$name[3])
+b4Landsat <- st_read(linkLandsatIIASA2015, nameBands$name[4])
+b5Landsat <- st_read(linkLandsatIIASA2015, nameBands$name[5])
+b6Landsat <- st_read(linkLandsatIIASA2015, nameBands$name[6])
+b7Landsat <- st_read(linkLandsatIIASA2015, nameBands$name[7])
+
+# Remove geometries
+st_geometry(b1Landsat) = NULL
+st_geometry(b2Landsat) = NULL
+st_geometry(b3Landsat) = NULL
+st_geometry(b4Landsat) = NULL
+st_geometry(b5Landsat) = NULL
+st_geometry(b6Landsat) = NULL
+st_geometry(b7Landsat) = NULL
 
 # Get Dates
-source("utils/extractDates.R")
 dates = extractDates()
 dates
 ColDates = paste0("X", gsub("-", ".", dates), "_SR_B1")
 NewColDates = paste0("X", gsub("-", ".", dates))
-colnames(b1Test[,ColDates]) = NewColDates
 
-## Test Temporal Filtering and Parameters ##
-TestTS = sample(1:nrow(b1Landsat), 50)
+# change column names to make them match with other bands
+colnames(b1Landsat)[4:194] = NewColDates
+colnames(b2Landsat)[4:194] = NewColDates
+colnames(b3Landsat)[4:194] = NewColDates
+colnames(b4Landsat)[4:194] = NewColDates
+colnames(b5Landsat)[4:194] = NewColDates
+colnames(b6Landsat)[4:194] = NewColDates
+colnames(b7Landsat)[4:194] = NewColDates
 
-st_geometry(b1Landsat) <- NULL
-
-b1Test = as.matrix(as.data.frame(b1Landsat[,4:194]))
-
-for (i in TestTS)
-{smoothLoessPlot(b1Test[i,], dates=dates, res_type="omit", span=0.2, 
-                 threshold=c(-2,2), main=i, threshstat="sd", family="symmetric")}
-
-## Apply Temporal Filtering ##
-startTime = Sys.time()
-b1MaskTest = pbapply(b1Test[1:10000,], 1, smoothLoessPlot, dates=dates, res_type="omit", span=0.2,
-        threshold=c(-2,2), threshstat="sd", family="symmetric")
-endTime = Sys.time()
-time1000 = endTime - startTime
-time1000
-b1MaskTest = t(b1MaskTest)
-
-
-b1Mask = pbapply(b1Test, 1, smoothLoessPlot, dates=dates, res_type="omit", span=0.2,
-                     threshold=c(-2,2), threshstat="sd", family="symmetric")
-b1Mask = t(b1Mask)
-
-
-## Start again from zero ##
-b1Test = b1Landsat
-st_geometry(b1Test) <- NULL
-
-DFcoords = b1Test[c("x","y")]
+# Get XY coords
+DFcoords = b1Landsat[c("x","y")]
 write.csv(DFcoords, paste0(linkData, "processed/IIASAtrainingCoords.csv"), row.names=F)
-coords = c("x","y")
-b1Values = b1Test[,ColDates]
 
-tempSF = st_as_sf(b1Test, coords=coords, dim="XY", remove=FALSE, crs=4326)
+## TEST and EXPERIMENT BELOW
+# Apply filter to remove outliers
+b1Filtered <- filterBands(b1Landsat[1:1000,], smoothLoessPlot, dates)
+mean(is.na(b1Filtered))
+mean(is.na(b1Landsat[1:1000,NewColDates]))
+
+# st_write and write.csv test
+b1FilterTest = b1Filtered
+coordsData = read.csv(paste0(linkData, "processed/IIASAtrainingCoords.csv"))
+b1FilterTest = cbind(b1FilterTest, x=coordsData$x, y=coordsData$y)
+coords = c("x","y")
+tempSF = st_as_sf(b1FilterTest, coords=coords, dim="XY", remove=FALSE, crs=4326)
 names(tempSF)[names(tempSF) == "geometry"] = "geom"
 st_geometry(tempSF) = "geom"
-st_write(tempSF, "C:/Users/robur/Documents/Thesis/code/data/processed/testSF.gpkg")
-#Dit boven werkt goed, TODO now: write forloop for filter and writing to gpkg layers.
+st_write(tempSF, "C:/Users/robur/Documents/Thesis/code/data/processed/b1Filtered.gpkg")
+write.csv(b1Filtered, "C:/Users/robur/Documents/Thesis/code/data/processed/b1Filtered.csv")
 
-## Test results ##
-mean(is.na(b1Test[1:1000,]))
-mean(is.na(b1MaskTest))
-mean(colMeans(is.na(b1MaskTest)))
-sum(is.na(b1Test[1:10000,]) != is.na(b1MaskTest)) / length(b1MaskTest)
-# Test shows 2% changed to NA
+# APPLY FILTER ON BAND 2 (BLUE)
+b2Filtered <- filterBands(b2Landsat, smoothLoessPlot, dates) # takes some time...
+mean(is.na(b2Filtered))
+mean(is.na(b2Landsat[,NewColDates]))
 
-## Test results of b1 ##
-mean(is.na(b1Test))
-mean(is.na(b1Mask))
-mean(colMeans(is.na(b1MaskTest)))
-sum(is.na(b1Test) != is.na(b1Mask)) / length(b1Mask)
-# B1 filter shows 2% increase in NA, from 43% to 45% NA
+# Write and store Filtered band as SF
+# ToDo: make function for this
+tempDF = b2Filtered
+coordsData = read.csv(paste0(linkData, "processed/IIASAtrainingCoords.csv"))
+tempDF = cbind(tempDF, x=coordsData$x, y=coordsData$y)
+coords = c("x","y")
+tempSF = st_as_sf(tempDF, coords=coords, dim="XY", remove=FALSE, crs=4326)
+names(tempSF)[names(tempSF) == "geometry"] = "geom"
+st_geometry(tempSF) = "geom"
+st_write(tempSF, "C:/Users/robur/Documents/Thesis/code/data/processed/b2Filtered.gpkg")
+
+# Remove new NAs for all bands
+# Now done for the band itself...
+
+# Apply b2 filter to all bands
+b1Filtered = applyFilter(b1Landsat, b2Filtered)
+
+mean(is.na(b2Filtered[,NewColDates])) # 45% NA
+mean(is.na(b1Landsat[,NewColDates])) # 43% NA
+mean(is.na(b1Filtered[,NewColDates])) # 45% NA
+
+b3Filtered = applyFilter(b3Landsat, b2Filtered)
+b4Filtered = applyFilter(b4Landsat, b2Filtered)
+b5Filtered = applyFilter(b5Landsat, b2Filtered)
+b6Filtered = applyFilter(b6Landsat, b2Filtered)
+b7Filtered = applyFilter(b7Landsat, b2Filtered)
+
+
+source("utils/dataManagement.R") # new function DFtoSF (adds geometry)
+
+b1FilteredSF <- DFtoSF(b1Filtered)
+b2FilteredSF <- DFtoSF(b2Filtered)
+b3FilteredSF <- DFtoSF(b3Filtered)
+b4FilteredSF <- DFtoSF(b4Filtered)
+b5FilteredSF <- DFtoSF(b5Filtered)
+b6FilteredSF <- DFtoSF(b6Filtered)
+b7FilteredSF <- DFtoSF(b7Filtered)
+
+# st_write(b1FilteredSF, "C:/Users/robur/Documents/Thesis/code/data/processed/b1Filtered.gpkg")
+# st_write(b2FilteredSF, "C:/Users/robur/Documents/Thesis/code/data/processed/b2Filtered.gpkg")
+# st_write(b3FilteredSF, "C:/Users/robur/Documents/Thesis/code/data/processed/b3Filtered.gpkg")
+# st_write(b4FilteredSF, "C:/Users/robur/Documents/Thesis/code/data/processed/b4Filtered.gpkg")
+# st_write(b5FilteredSF, "C:/Users/robur/Documents/Thesis/code/data/processed/b5Filtered.gpkg")
+# st_write(b6FilteredSF, "C:/Users/robur/Documents/Thesis/code/data/processed/b6Filtered.gpkg")
+# st_write(b7FilteredSF, "C:/Users/robur/Documents/Thesis/code/data/processed/b7Filtered.gpkg")
+
+# Save as one gpkg with multiple layers
+st_write(b1FilteredSF, paste0(linkData,"processed/IIASAtrainingFiltered.gpkg"), "b1")
+st_write(b2FilteredSF, paste0(linkData,"processed/IIASAtrainingFiltered.gpkg"), "b2")
+st_write(b3FilteredSF, paste0(linkData,"processed/IIASAtrainingFiltered.gpkg"), "b3")
+st_write(b4FilteredSF, paste0(linkData,"processed/IIASAtrainingFiltered.gpkg"), "b4")
+st_write(b5FilteredSF, paste0(linkData,"processed/IIASAtrainingFiltered.gpkg"), "b5")
+st_write(b6FilteredSF, paste0(linkData,"processed/IIASAtrainingFiltered.gpkg"), "b6")
+st_write(b7FilteredSF, paste0(linkData,"processed/IIASAtrainingFiltered.gpkg"), "b7")
+
+# test multiple layers
+st_read(paste0(linkData, "processed/IIASAtrainingFiltered.gpkg"), "b2")
 
 
 
-InputMatrix = b1Landsat[,ColDates]
-InputMatrix[is.na(b1Mask)] = NA
 
+## Temporal filter Function ##
+# now stored in utils/filterBands.R
 
-## Save output ##
-st_write(InputMatrix, "C:/Users/robur/Documents/Thesis/code/data/processed/b1Filtered.csv")
-# b1Mask moet naar dataframe met geometry
-
-
-
-
-
-
-## Function ##
 smoothLoessPlot = function (tsx, QC_good = NULL, dates = NULL, threshold = c(-50, Inf),
                             res_type = c("distance", "sd_distance", "all", "filled","omit", "QC"),
                             span=0.3, family="gaussian", threshstat="none", plot=TRUE, ...) 
