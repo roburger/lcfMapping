@@ -28,7 +28,24 @@ filterBands = function(band, filterFunction=smoothLoessPlot, dates=dates){
   return(bandFiltered)
 }
 
-#listDF = list(b1Landsat, b2Landsat, b3Landsat, b4Landsat, b5Landsat, b6Landsat, b7Landsat)
+
+# Apply filtered band on all bands
+# or in other words: apply new NA's on other bands
+# band: refering to the band that needs to be filtered
+# filteredBand: refering to the band that has already been filtered
+
+applyFilter <- function(band, filteredBand){
+  
+  filteredBandMatrix = as.matrix(filteredBand[,NewColDates])
+  
+  temp = as.matrix(band)[,NewColDates]
+  temp[is.na(filteredBandMatrix)] = NA
+  
+  band[,NewColDates] = temp
+  
+  return(band)
+}
+
 
 
 ##
