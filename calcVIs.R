@@ -1,5 +1,6 @@
 # MSc Thesis
-# 15/12/2021
+# Start: 15/12/2021
+# Modified: 28/03/2022
 # Calculate vegetation indices
 
 # Set working directory
@@ -55,9 +56,7 @@ st_geometry(ndvi) = NULL
 ndviComplete = ndvi
 ndvi = ndvi[,NewColDates]
 
-# NDBI #
-
-
+# Unused features below:
 # NDVI stats
 head(as.numeric(apply(ndvi, 1, mean, na.rm=T)), 5)
 ndvi[1,]
