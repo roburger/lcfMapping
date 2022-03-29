@@ -26,32 +26,18 @@ loadFeaturesNames <- function(){
 loadTrainingData <- function(){
   
   # TrainX
-  
-  # if (year=="2015"){
-  #   harmonics = st_read("../data/processed/2015/IIASAtrainingHarmonics.gpkg", "NDVI")
-  #   st_geometry(harmonics)=NULL
-  # }
-  # else if (year=="2016"){
-  #   harmonics = st_read("../data/processed/2016/IIASAtrainingHarmonics.gpkg", "NDVI")
-  #   st_geometry(harmonics)=NULL
-  # }
-  # else {
-  #   harmonics = st_read(paste0(linkData, "processed/IIASAtrainingHarmonics.gpkg"), "NDVI")
-  #   st_geometry(harmonics)=NULL
-  # }
-  
+
+  # Read in training features from ndvi temporal harmonic features
   harmonics = st_read(paste0(linkData, "processed/IIASAtrainingHarmonics.gpkg"), "NDVI")
   st_geometry(harmonics)=NULL
   locationID = read.csv("../data/processed/IIASAtrainingLocationID.csv")
   harmonics = cbind(locationID,harmonics)
   rm(locationID)
   
-  # New here below:
+  # Read in "new features" and combine
   VIs = st_read("../data/processed/IIASAtrainingVIs.gpkg")
   st_geometry(VIs)=NULL
   features = merge(harmonics,VIs)
-  
-  # End of new
   
   # TrainY
   filename = "../data/raw/training_data_2015_100m_20190402_V4_New.csv" #use this csv!!!
@@ -60,7 +46,7 @@ loadTrainingData <- function(){
   rm(filename)
   
   
-  # Remove rows that have NA in some key columns. TODO: make function of this
+  # Remove rows that have NA in some key columns
   Before = nrow(features)
   dropRows = apply(features, 1, function(x){any(!is.finite(x))})
   features = features[!dropRows,]
@@ -92,7 +78,6 @@ loadTrainingData <- function(){
     #print(class)
     if (names(ClassMap[class]) %in% names(samplePoints))
       samplePoints[[ClassMap[class]]] = samplePoints[[ClassMap[class]]] + samplePoints[[names(ClassMap[class])]]
-    #print("done")
   }
   
   classes = c("tree", "shrub", "grassland", "crops", "urban_built_up", "bare", "water")

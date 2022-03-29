@@ -123,6 +123,11 @@ getStats <- function(predictions, reference=loadValidationData(), classes=loadCl
     statistics["MAE",class] = MAE
   }
   
+  # Add overall RMSE and MAE as column
+  rmse = round(sqrt(mean(unlist(predictions - reference)^2)), digits = 1)
+  mae = round(mean(abs(unlist(predictions  - reference))), digits = 1)
+  statistics$overall = c(rmse, mae)
+  
   # Round stats to 1 digit -> more interpretable
   statsRounded = round(statistics, digits = 1)
   

@@ -459,18 +459,18 @@ origRef2017 = subset(origRef2017, sample_id %in% temp$sample_id)
 origRef2018 = subset(origRef2018, sample_id %in% temp$sample_id)
 
 source("utils/subpixelConfusionMatrix.R")
-s_k = rec2017
+s_k = markov2018
 s_k[rowSums(s_k) == 0,] = rep(100/length(classes),length(classes))
-truth = change2017[,classes]
+truth = change2018[,classes]
 
 SCM(s_k/100, truth/100, plot = FALSE, totals = TRUE)
 
 # Overall Accuracy on change with new features
 #       Basic       Recurrent   Markov    Recurrent(IIASA2015+prev)
 # 2015  67.9+1.1    68.0+1.2    68.7+1.3  67.9+1.1
-# 2016  67.2+1.2    64.4+1.1              67.1+1.1
-# 2017  67.0+1.2    60.7+1.0              65.6+1.1
-# 2018  67.2+1.3    58.4+1.0              64.8+1.1
+# 2016  67.2+1.2    64.4+1.1    68.3+1.3  67.1+1.1
+# 2017  67.0+1.2    60.7+1.0    68.1+1.3  65.6+1.1
+# 2018  67.2+1.3    58.4+1.0    67.9+1.3  64.8+1.1
 
 # recurrent decreasing OA over the years
 # due to:

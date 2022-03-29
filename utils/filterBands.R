@@ -1,5 +1,6 @@
 # MSc Thesis
 # 13/12/2021
+# Modified: 29/02/2022
 # Outlier filter function
 
 # 1. remove geometry

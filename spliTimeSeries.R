@@ -5,9 +5,8 @@
 # Set working directory
 setwd("~/Thesis/code/lcfMapping/")
 
-# Access libraries
+# Access libraries and functions
 library(sf)
-#library(devtools)
 library(probaV)
 library(pbapply)
 library(ranger)
@@ -19,129 +18,12 @@ source("RFfunction.R")
 # Link to data folder
 linkData <- "C:/Users/robur/Documents/Thesis/code/data/"
 
-## Apply on Training set first ##
 
-# Read in filtered bands
-b1 = st_read(paste0(linkData, "processed/IIASAtrainingFiltered.gpkg"), "b1")
-b2 = st_read(paste0(linkData, "processed/IIASAtrainingFiltered.gpkg"), "b2")
-b3 = st_read(paste0(linkData, "processed/IIASAtrainingFiltered.gpkg"), "b3")
-b4 = st_read(paste0(linkData, "processed/IIASAtrainingFiltered.gpkg"), "b4")
-b5 = st_read(paste0(linkData, "processed/IIASAtrainingFiltered.gpkg"), "b5")
-b6 = st_read(paste0(linkData, "processed/IIASAtrainingFiltered.gpkg"), "b6")
-b7 = st_read(paste0(linkData, "processed/IIASAtrainingFiltered.gpkg"), "b7")
+## Apply on Validation set ##
 
-st_geometry(b1)=NULL
-st_geometry(b2)=NULL
-st_geometry(b3)=NULL
-st_geometry(b4)=NULL
-st_geometry(b5)=NULL
-st_geometry(b6)=NULL
-st_geometry(b7)=NULL
-
-b12015 = b1[,colnames(b1)[grepl("2014|2015|2016", colnames(b1))]]
-b12016 = b1[,colnames(b1)[grepl("2015|2016|2017", colnames(b1))]]
-b12017 = b1[,colnames(b1)[grepl("2016|2017|2018", colnames(b1))]]
-b12018 = b1[,colnames(b1)[grepl("2017|2018|2019", colnames(b1))]]
-
-# extract bands for each year -> TODO: make function
-# 2015
-# 68 observations / dates
-b12015 = b1[,colnames(b1)[grepl("2014|2015|2016", colnames(b1))]]
-b22015 = b2[,colnames(b2)[grepl("2014|2015|2016", colnames(b2))]]
-b32015 = b3[,colnames(b3)[grepl("2014|2015|2016", colnames(b3))]]
-b42015 = b4[,colnames(b4)[grepl("2014|2015|2016", colnames(b4))]]
-b52015 = b5[,colnames(b5)[grepl("2014|2015|2016", colnames(b5))]]
-b62015 = b6[,colnames(b6)[grepl("2014|2015|2016", colnames(b6))]]
-b72015 = b7[,colnames(b7)[grepl("2014|2015|2016", colnames(b7))]]
-
-# calc ndvi
-b4Temp = as.data.frame(sapply(b42015, as.numeric))
-b5Temp = as.data.frame(sapply(b52015, as.numeric))
-ndvi = (b5Temp - b4Temp) / (b5Temp + b4Temp)
-rm(b4Temp)
-rm(b5Temp)
-
-# calc temporal harmonics
-dates= extractDates()
-dates = dates[grepl("2014|2015|2016",dates)]
-HarmMetrics = t(pbapply(as.matrix(ndvi), 1, getHarmonics))
-
-# adjust temporal harmonics
-coordsData = read.csv(paste0(linkData, "processed/IIASAtrainingCoords.csv"))
-HarmMetrics = cbind(coordsData[, c("x", "y")], HarmMetrics)
-
-# change colnames
-names(HarmMetrics)[3:(length(HarmMetrics))]= c("min", "max", "intercept", "co", 
-                                               "si", "co2", "si2", "trend", "phase1", 
-                                               "amplitude1", "phase2", "amplitude2")
-names(HarmMetrics)
-
-# Save (ndvi)2015 features as GPKG
-temp = DFtoSF(HarmMetrics)
-st_write(temp, "../data/processed/2015/IIASAtrainingHarmonics.gpkg", "NDVI")
-harmonics2015 = st_read("../data/processed/2015/IIASAtrainingHarmonics.gpkg", "NDVI")
-st_geometry(harmonics2015)=NULL
-
-# load training data with function
-dataTrain = loadTrainingData("2015")
-
-# perform RF
-predictions = runRandomForest(dataTrain)
-statistics = getStats(predictions)
-
-# save RF predictions
-write.csv(testsScale, "../data/output/predictions-2015-ndvi.csv", row.names = F)
-predCSV = read.csv("../data/output/predictions-2015-ndvi.csv")
-
-
-# 2016 #
-# 69 observations / dates
-b42016 = b4[,colnames(b4)[grepl("2015|2016|2017", colnames(b4))]]
-b52016 = b5[,colnames(b5)[grepl("2015|2016|2017", colnames(b5))]]
-
-# calc ndvi
-b4Temp = as.data.frame(sapply(b42016, as.numeric))
-b5Temp = as.data.frame(sapply(b52016, as.numeric))
-ndvi = (b5Temp - b4Temp) / (b5Temp + b4Temp)
-rm(b4Temp)
-rm(b5Temp)
-
-# calc temporal harmonics
-dates= extractDates()
-dates = dates[grepl("2015|2016|2017",dates)]
-HarmMetrics = t(pbapply(as.matrix(ndvi), 1, getHarmonics))
-
-# adjust temporal harmonics
-coordsData = read.csv(paste0(linkData, "processed/IIASAtrainingCoords.csv"))
-HarmMetrics = cbind(coordsData[, c("x", "y")], HarmMetrics)
-
-# change colnames
-names(HarmMetrics)[3:(length(HarmMetrics))]= c("min", "max", "intercept", "co", 
-                                               "si", "co2", "si2", "trend", "phase1", 
-                                               "amplitude1", "phase2", "amplitude2")
-names(HarmMetrics)
-
-# Save (ndvi) 2016 features as GPKG
-temp = DFtoSF(HarmMetrics)
-st_write(temp, "../data/processed/2016/IIASAtrainingHarmonics.gpkg", "NDVI")
-harmonics2016 = st_read("../data/processed/2016/IIASAtrainingHarmonics.gpkg", "NDVI")
-st_geometry(harmonics2016)=NULL
-
-# load training data with function
-dataTrain = loadTrainingData("2016")
-
-# perform RF
-predictions = runRandomForest(dataTrain)
-statistics = getStats(predictions)
-
-# save RF predictions
-write.csv(predictions, "../data/output/predictions-2016-ndvi.csv", row.names = F)
-predCSV = read.csv("../data/output/predictions-2016-ndvi.csv")
-
-
-### EDIT: I SPLIT TRAINING, I SHOULD SPLIT VALIDATION (TESTX)
-# So change all of the above...
-# Also change the loadData part where loadTraining(year=2015) -> loadTraining() & loadVali(year=2015)
+# Yearly data consists of TS from year adjacent years + year itself
+# Example: 2015 consists of data from 2014, 2015 and 2016
+# In this script implemented with grepl function
 
 b4 = st_read(paste0(linkData, "processed/WURvalidationFiltered.gpkg"), "b4")
 b5 = st_read(paste0(linkData, "processed/WURvalidationFiltered.gpkg"), "b5")
@@ -161,8 +43,8 @@ rm(b4Temp)
 rm(b5Temp)
 
 # calc temporal harmonics
-dates= extractDates()
-dates = dates[grepl("2014|2015|2016",dates)]
+dates = extractDates()
+dates = dates[grepl("2014|2015|2016",dates)] # important to run before getHarmonics below
 HarmMetrics = t(pbapply(as.matrix(ndvi), 1, getHarmonics))
 
 # adjust temporal harmonics
@@ -176,24 +58,16 @@ names(HarmMetrics)[2:(length(HarmMetrics))]= c("x", "y", "min", "max", "intercep
 names(HarmMetrics)
 
 # Save (ndvi) 2015 features as GPKG
+# should create 2015 folder in data/processed folder
 temp = DFtoSF(HarmMetrics)
 st_write(temp, "../data/processed/2015/WURvalidationHarmonics.gpkg", "NDVI")
 harmonics2015 = st_read("../data/processed/2015/WURvalidationHarmonics.gpkg", "NDVI")
 st_geometry(harmonics2015)=NULL
 
-# load training data with function
+
+# load data with function (test)
 dataTrain = loadTrainingData()
-dataVali = loadValidationData("2015")
-
-# perform RF
-predictions = runRandomForest(train=dataTrain, vali=dataVali)
-statistics = getStats(predictions, dataVali)
-
-# save RF predictions
-write.csv(predictions, "../data/output/predictions-2015-ndvi.csv", row.names = F)
-pred2015 = read.csv("../data/output/predictions-2015-ndvi.csv")
-vali2015 = loadValidationData("2015")
-pred2015 = cbind(vali2015$sample_id, pred2015)
+dataVali2015 = loadValidationData("2015")
 
 
 # 2016 #
@@ -230,17 +104,9 @@ st_write(temp, "../data/processed/2016/WURvalidationHarmonics.gpkg", "NDVI")
 harmonics2016 = st_read("../data/processed/2016/WURvalidationHarmonics.gpkg", "NDVI")
 st_geometry(harmonics2016)=NULL
 
-# load training data with function
+# load data with function
 dataTrain = loadTrainingData()
 dataVali = loadValidationData("2016")
-
-# perform RF
-predictions = runRandomForest(train=dataTrain, vali=dataVali)
-statistics = getStats(predictions, dataVali)
-
-# save RF predictions
-write.csv(predictions, "../data/output/predictions-2016-ndvi.csv", row.names = F)
-predCSV = read.csv("../data/output/predictions-2016-ndvi.csv")
 
 # 2017 #
 # 69 observations / dates
@@ -276,17 +142,9 @@ st_write(temp, "../data/processed/2017/WURvalidationHarmonics.gpkg", "NDVI")
 harmonics2017 = st_read("../data/processed/2017/WURvalidationHarmonics.gpkg", "NDVI")
 st_geometry(harmonics2017)=NULL
 
-# load training data with function
+# load data with function
 dataTrain = loadTrainingData()
 dataVali = loadValidationData("2017")
-
-# perform RF
-predictions = runRandomForest(train=dataTrain, vali=dataVali)
-statistics = getStats(predictions, dataVali)
-
-# save RF predictions
-write.csv(predictions, "../data/output/predictions-2017-ndvi.csv", row.names = F)
-pred2017 = read.csv("../data/output/predictions-2017-ndvi.csv")
 
 # 2018 #
 # 68 observations / dates
@@ -335,14 +193,21 @@ write.csv(predictions, "../data/output/predictions-2018-ndvi.csv", row.names = F
 pred2018 = read.csv("../data/output/predictions-2018-ndvi.csv")
 
 
-## SAME SEED FOR RF? PROBABLY YEAH...
-# SAME RF MODEL FOR EACH YEAR.?
-# SO, RF-MODEL FOR 'TREE', PREDICT FOR 2015, 2016, 2017 AND 2018.
+
 dataTrain = loadTrainingData()
 dataVali2015 = loadValidationData("2015")
 dataVali2016 = loadValidationData("2016")
 dataVali2017 = loadValidationData("2017")
 dataVali2018 = loadValidationData("2018")
+
+
+
+
+
+
+
+## Everything below is random forest tryout
+# TODO: should move to other script
 
 
 classes = loadClassNames()
@@ -447,7 +312,6 @@ write.csv(truth2018,"../data/processed/2018/truth-2018.csv", row.names = F)
 
 # TODO: next-up. 
 # look at variable importance?
-# fancy-up scripts
 
 # Median voting
 years = list("2015"=dataVali2015, "2016"=dataVali2016,"2017"=dataVali2017, "2018"=dataVali2018)

@@ -2,19 +2,23 @@
 # 19/01/2021
 # Load validation data
 
-# Access libraries
+# Access libraries and functions
 library(sf)
 library(pbapply)
+library(probaV)
+source("utils/extractDates.R")
+source("utils/filterBands.R")
+source("utils/dataManagement.R")
+source("utils/harmonicsFunctions.R")
 
 # Set working directory
 setwd("~/Thesis/code/lcfMapping/")
 
 # Get Dates
-source("utils/extractDates.R")
 dates = extractDates()
-ColDates = paste0("X", gsub("-", ".", dates))
+NewColDates = paste0("X", gsub("-", ".", dates))
 ColDates = paste0(NewColDates, "_SR_B1")
-  
+
 # Read in validation data (validY)
 filename = "../data/raw/refdata_world_africa_included_locations_data20190709.csv"
 validationRaw = read.csv(filename, header = T)
@@ -24,14 +28,17 @@ validationRaw = read.csv(filename, header = T)
 validationGPKG = st_read("../data/raw/WURValidation2015_Landsat8_TS.gpkg")
 st_geometry(validationGPKG)=NULL
 # now only reading in first band B1
-# should have the same features as training... 
-# so calculate harmonics for validation data I guess probably 
 
+# validation set should have the same features as training set... 
+# so calculate ndvi harmonics for validation data
+
+# check if all points correspond
 all(validationRaw$sample_id %in% validationGPKG$ï..sample_id)
 all(validationGPKG$sample_id %in% validationRaw$ï..sample_id)
 
+# change to numeric
 sapply(validationGPKG, class)
-validationGPKG = as.data.frame(sapply(validationGPKG[,NewColDates], as.numeric))
+validationGPKG = as.data.frame(sapply(validationGPKG[,ColDates], as.numeric))
 sapply(validationGPKG, class)
 
 plot(as.numeric(apply(validationGPKG, 2, function(x){mean(x, na.rm = TRUE)})))
@@ -44,25 +51,19 @@ b4Validation <- st_read(linkRawValidation, nameBands$name[4])
 b5Validation <- st_read(linkRawValidation, nameBands$name[5])
 st_geometry(b4Validation)=NULL
 st_geometry(b5Validation)=NULL
-# save samplID, x and y as df 
-temp = data.frame(b4Validation$sample_id, b4Validation$subpix_mean_x, b4Validation$subpix_mean_y)
+
+# save sampleID, x and y as df 
 temp = subset(b4Validation, select = c("sample_id", "subpix_mean_x", "subpix_mean_y"))
 write.csv(temp, paste0(linkData, "processed/WURvalidationIDcoords.csv"), row.names=F)
 
-b1Test = validationGPKG
-colnames(b1Test)
-NewColDates = paste0("X", gsub("-", ".", dates))
-colnames(b1Test)= NewColDates
-
-b4Validation = b4Validation[,4:194]
+b4Validation = b4Validation[,4:194] # or fancier below
 b4Validation = b4Validation[,colnames(b4Validation)[grepl("201|202", colnames(b4Validation))]] # subset 2010 and 2020 TS columns
 colnames(b4Validation) = NewColDates
 
-# Temporal filter
-source("utils/filterBands.R")
-b4Filtered = filterBands(b4Validation, smoothLoessPlot, dates)
-mean(is.na(b4Filtered)) # 45,5%
-mean(is.na(b4Validation)) # 47,4% -> 2% has been filtered
+# Test Temporal filter on validation set
+b4Filtered = filterBands(b4Validation[1:1000,], smoothLoessPlot, dates)
+mean(is.na(b4Filtered[1:1000,])) # 34.4%
+mean(is.na(b4Validation[1:1000,])) # 36.4% -> 2% has been filtered
 
 # Apply Filter on other bands
 # Read in data per band
@@ -88,39 +89,19 @@ colnames(b4Validation)[4:194] = NewColDates
 colnames(b5Validation)[4:194] = NewColDates
 colnames(b6Validation)[4:194] = NewColDates
 colnames(b7Validation)[4:194] = NewColDates
+
 # Filter on the blue band (most sensitive to clouds)
 b2Filtered <- filterBands(b2Validation, smoothLoessPlot, dates)
 mean(is.na(b2Validation))
 mean(is.na(b2Filtered))
 
 # Apply b2 filter to other bands
-b2Matrix = as.matrix(b2Filtered[,NewColDates])
-
-temp = as.matrix(b7Landsat)[,NewColDates]
-temp[is.na(b2Matrix)] = NA
-
-b7Filtered[,NewColDates] = temp
-mean(is.na(b7Filtered))
-mean(is.na(b2Filtered))
-
-
-for (band in c(paste0("b", 1:7, "Validation"))){
-  print(band)
-
-  if (band == "b2Validation"){next}
-  
-  # Convert to matrix (easy to assign NA's)
-  temp = as.matrix(eval(as.symbol(band)))[,NewColDates]
-  
-  # Assign the b2 filtered NA's to other band
-  temp[is.na(b2Matrix)] = NA
-  
-  # Create copy of b1Validation and assign name b1Filtered
-  copy = eval(as.symbol(band))
-  copy[,NewColDates] = temp
-
-  assign(gsub("Validation","Filtered", band), copy)
-}
+b1Filtered = applyFilter(b1Validation, b2Filtered)
+b3Filtered = applyFilter(b3Validation, b2Filtered)
+b4Filtered = applyFilter(b4Validation, b2Filtered)
+b5Filtered = applyFilter(b5Validation, b2Filtered)
+b6Filtered = applyFilter(b6Validation, b2Filtered)
+b7Filtered = applyFilter(b7Validation, b2Filtered)
 
 # Check if total NA's are the same
 mean(is.na(b1Filtered[,NewColDates]))
@@ -131,12 +112,11 @@ mean(is.na(b5Filtered[,NewColDates]))
 mean(is.na(b6Filtered[,NewColDates]))
 mean(is.na(b7Filtered[,NewColDates]))
 
-# Re-add sample ID and coords to b2
+# Re-add sample ID and coords to b2 (if necessary)
 temp = subset(b4Validation, select = c("sample_id", "subpix_mean_x", "subpix_mean_y"))
 b2Filtered = cbind(temp, b2Filtered)
 
 # Store filtered bands
-source("utils/dataManagement.R")
 b1FilteredSF <- DFtoSF(b1Filtered, coords = c("subpix_mean_x","subpix_mean_y"), validation = TRUE)
 b2FilteredSF <- DFtoSF(b2Filtered, coords = c("subpix_mean_x","subpix_mean_y"), validation = TRUE)
 b3FilteredSF <- DFtoSF(b3Filtered, coords = c("subpix_mean_x","subpix_mean_y"), validation = TRUE)
@@ -145,7 +125,7 @@ b5FilteredSF <- DFtoSF(b5Filtered, coords = c("subpix_mean_x","subpix_mean_y"), 
 b6FilteredSF <- DFtoSF(b6Filtered, coords = c("subpix_mean_x","subpix_mean_y"), validation = TRUE)
 b7FilteredSF <- DFtoSF(b7Filtered, coords = c("subpix_mean_x","subpix_mean_y"), validation = TRUE)
 
-# Save as one gpkd with mulitple layers
+# Save as one gpkg with mulitple layers
 st_write(b1FilteredSF, paste0(linkData,"processed/WURvalidationFiltered.gpkg"), "b1")
 st_write(b2FilteredSF, paste0(linkData,"processed/WURvalidationFiltered.gpkg"), "b2")
 st_write(b3FilteredSF, paste0(linkData,"processed/WURvalidationFiltered.gpkg"), "b3")
@@ -176,14 +156,6 @@ ndviSF <- DFtoSF(temp, coords = c("subpix_mean_x","subpix_mean_y"), validation =
 st_write(ndviSF, "../data/processed/WURvalidationVIs.gpkg", "NDVI")
 
 ## Get ndvi harmonics ##
-# Link to libraries
-library(devtools)
-library(probaV)
-# Link to data
-InputLink = "../data/processed/WURvalidationVIs.gpkg.gpkg"
-OuputHarmonicsLink = "../data/processed/WURvalidationHarmonics.gpkg"
-
-# LOAD FUNCTIONS FROM GETHARMONICS.R AMPLITUDER, PHASER, GETHARMONICS
 
 # Apply function to get the harmonics of NDVI
 test = t(pbapply(as.matrix(ndvi), 1, getHarmonics))
@@ -196,5 +168,6 @@ names(HarmMetrics)[4:(length(HarmMetrics))]= c("min", "max", "intercept", "co",
 names(HarmMetrics)
 
 # Save harmonics 
+OuputHarmonicsLink = "../data/processed/WURvalidationHarmonics.gpkg"
 HarmMetricsSF <- DFtoSF(HarmMetrics, coords = c("subpix_mean_x","subpix_mean_y"), validation = TRUE) # first source
 st_write(HarmMetricsSF, OuputHarmonicsLink, "NDVI")
