@@ -1,8 +1,10 @@
 # MSc Thesis
-# 20/12/2021
+# Start: 20/12/2021
+# Finalised: 31/05/2022
+
 # Get harmonic and temporal information
 
-# Access to probaV github library
+# Access to probaV github library (uncomment lines below to get probaV package)
 #library(devtools)
 #options(unzip = "internal")
 #install_github("JornDallinga/probaV")
@@ -13,7 +15,7 @@ library(sf)
 source("utils/extractDates.R")
 source("utils/harmonicsFunctions.R")
 
-# Set working directory
+# Set working directory (for yourself)
 setwd("~/Thesis/code/lcfMapping/")
 
 # Link to data
@@ -28,6 +30,7 @@ NewColDates = paste0("X", gsub("-", ".", dates))
 ndvi = st_read(InputLink, "NDVI")
 st_geometry(ndvi) = NULL
 ndvi = ndvi[,NewColDates]
+
 
 # Apply GetHarmMetrics on NDVI timeseries
 

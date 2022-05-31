@@ -1,21 +1,22 @@
 # MSc Thesis
 # Start: 15/12/2021
 # Modified: 28/03/2022
+# Finalised: 31/05/2022
 # Calculate vegetation indices
 
-# Set working directory
+# Set working directory (for yourself)
 setwd("~/Thesis/code/lcfMapping/")
 
 # Set libraries
 library(sf)
+source("utils/dataManagement.R")
+source("utils/extractDates.R")
 
 # Link to data and utils
 InputLink = "../data/processed/IIASAtrainingFiltered.gpkg"
 OutputLink = "../data/processed/IIASAtrainingVIs.gpkg"
-source("utils/dataManagement.R")
 
 # Get Dates
-source("utils/extractDates.R")
 dates = extractDates()
 NewColDates = paste0("X", gsub("-", ".", dates))
 
@@ -60,7 +61,9 @@ st_geometry(ndvi) = NULL
 ndviComplete = ndvi
 ndvi = ndvi[,NewColDates]
 
-# Unused features below:
+
+
+# Unused features below (not used further):
 # NDVI stats
 head(as.numeric(apply(ndvi, 1, mean, na.rm=T)), 5)
 ndvi[1,]

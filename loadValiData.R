@@ -1,6 +1,8 @@
 # MSc Thesis
-# 19/01/2021
-# Load validation data
+# Start: 19/01/2021
+# Finalised: 31/05/2022
+
+# Load and process validation data
 
 # Access libraries and functions
 library(sf)
@@ -11,7 +13,7 @@ source("utils/filterBands.R")
 source("utils/dataManagement.R")
 source("utils/harmonicsFunctions.R")
 
-# Set working directory
+# Set working directory (for yourself)
 setwd("~/Thesis/code/lcfMapping/")
 
 # Get Dates

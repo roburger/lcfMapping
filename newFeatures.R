@@ -2,7 +2,7 @@
 # 25/02/2021
 # Add new features
 
-# Set working directory
+# Set working directory (for yourself)
 setwd("~/Thesis/code/lcfMapping/")
 
 # Access libraries

@@ -1,8 +1,10 @@
 # MSc Thesis
-# 27/01/2021
+# Start: 27/01/2021
+# Finalised: 31/05/2022
+
 # Split time series into yearly forecasts
 
-# Set working directory
+# Set working directory (for yourself)
 setwd("~/Thesis/code/lcfMapping/")
 
 # Access libraries and functions
@@ -15,7 +17,7 @@ source("utils/dataManagement.R")
 source("utils/loadData.R")
 source("RFfunction.R")
 
-# Link to data folder
+# Link to data folder (adapt for yourself)
 linkData <- "C:/Users/robur/Documents/Thesis/code/data/"
 
 
@@ -180,25 +182,7 @@ st_write(temp, "../data/processed/2018/WURvalidationHarmonics.gpkg", "NDVI")
 harmonics2018 = st_read("../data/processed/2018/WURvalidationHarmonics.gpkg", "NDVI")
 st_geometry(harmonics2018)=NULL
 
-# load training data with function
-dataTrain = loadTrainingData()
-dataVali = loadValidationData("2018")
 
-# perform RF
-predictions = runRandomForest(train=dataTrain, vali=dataVali)
-statistics = getStats(predictions, dataVali)
-
-# save RF predictions
-write.csv(predictions, "../data/output/predictions-2018-ndvi.csv", row.names = F)
-pred2018 = read.csv("../data/output/predictions-2018-ndvi.csv")
-
-
-
-dataTrain = loadTrainingData()
-dataVali2015 = loadValidationData("2015")
-dataVali2016 = loadValidationData("2016")
-dataVali2017 = loadValidationData("2017")
-dataVali2018 = loadValidationData("2018")
 
 
 
@@ -208,6 +192,27 @@ dataVali2018 = loadValidationData("2018")
 
 ## Everything below is random forest tryout
 # TODO: should move to other script
+
+
+
+# load training data with function
+dataTrain = loadTrainingData()
+dataVali = loadValidationData("2018")
+
+# perform RF
+predictions = runRandomForest(train=dataTrain, vali=dataVali)
+statistics = getStats(predictions, dataVali)
+
+# save RF predictions 
+#write.csv(predictions, "../data/output/predictions-2018-ndvi.csv", row.names = F)
+#pred2018 = read.csv("../data/output/predictions-2018-ndvi.csv")
+
+dataTrain = loadTrainingData()
+dataVali2015 = loadValidationData("2015")
+dataVali2016 = loadValidationData("2016")
+dataVali2017 = loadValidationData("2017")
+dataVali2018 = loadValidationData("2018")
+
 
 
 classes = loadClassNames()

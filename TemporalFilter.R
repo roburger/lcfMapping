@@ -1,9 +1,11 @@
 # MSc Thesis
+# Apply temporal filter
 # Start: 13/12/2021
 # Modified: 28/03/2022
-# Apply temporal filter
+# Finalized: 31/05/2022
 
 # Set working directory
+# adjust for yourself !
 setwd("~/Thesis/code/lcfMapping/")
 
 # Import packages
@@ -12,10 +14,11 @@ library(dplyr)
 library(pbapply)
 source("utils/extractDates.R")
 source("utils/filterBands.R")
+source("utils/dataManagement.R")
 
 
 # Link to data folder
-linkData <- "C:/Users/robur/Documents/Thesis/code/data/"
+linkData <- "C:/Users/robur/Documents/Thesis/code/data/" # adjust to own folder !
 
 # Retrieve band layers
 linkLandsatIIASA2015 <- paste0(linkData, "raw/IIASATraining2015_Landsat8_TS.gpkg")
@@ -41,7 +44,6 @@ st_geometry(b7Landsat) = NULL
 
 # Get Dates
 dates = extractDates()
-dates
 ColDates = paste0("X", gsub("-", ".", dates), "_SR_B1")
 NewColDates = paste0("X", gsub("-", ".", dates))
 
@@ -75,21 +77,16 @@ st_geometry(tempSF) = "geom"
 st_write(tempSF, "C:/Users/robur/Documents/Thesis/code/data/processed/b1Filtered.gpkg")
 write.csv(b1Filtered, "C:/Users/robur/Documents/Thesis/code/data/processed/b1Filtered.csv")
 
+
+
 # APPLY FILTER ON BAND 2 (BLUE)
 b2Filtered <- filterBands(b2Landsat, smoothLoessPlot, dates) # takes some time...
 mean(is.na(b2Filtered))
 mean(is.na(b2Landsat[,NewColDates]))
 
 # Write and store Filtered band as SF
-# ToDo: make function for this
-tempDF = b2Filtered
-coordsData = read.csv(paste0(linkData, "processed/IIASAtrainingCoords.csv"))
-tempDF = cbind(tempDF, x=coordsData$x, y=coordsData$y)
-coords = c("x","y")
-tempSF = st_as_sf(tempDF, coords=coords, dim="XY", remove=FALSE, crs=4326)
-names(tempSF)[names(tempSF) == "geometry"] = "geom"
-st_geometry(tempSF) = "geom"
-st_write(tempSF, "C:/Users/robur/Documents/Thesis/code/data/processed/b2Filtered.gpkg")
+b2FilteredSF <- DFtoSF(b2Filtered)
+st_write(b2FilteredSF, "C:/Users/robur/Documents/Thesis/code/data/processed/b2Filtered.gpkg")
 
 # Remove new NAs for all bands
 # Now done for the band itself...
@@ -107,9 +104,7 @@ b5Filtered = applyFilter(b5Landsat, b2Filtered)
 b6Filtered = applyFilter(b6Landsat, b2Filtered)
 b7Filtered = applyFilter(b7Landsat, b2Filtered)
 
-
-source("utils/dataManagement.R") # new function DFtoSF (adds geometry)
-
+# Change to SF format
 b1FilteredSF <- DFtoSF(b1Filtered)
 b2FilteredSF <- DFtoSF(b2Filtered)
 b3FilteredSF <- DFtoSF(b3Filtered)
@@ -118,6 +113,7 @@ b5FilteredSF <- DFtoSF(b5Filtered)
 b6FilteredSF <- DFtoSF(b6Filtered)
 b7FilteredSF <- DFtoSF(b7Filtered)
 
+# Save as gpkg (better to do it below)
 # st_write(b1FilteredSF, "C:/Users/robur/Documents/Thesis/code/data/processed/b1Filtered.gpkg")
 # st_write(b2FilteredSF, "C:/Users/robur/Documents/Thesis/code/data/processed/b2Filtered.gpkg")
 # st_write(b3FilteredSF, "C:/Users/robur/Documents/Thesis/code/data/processed/b3Filtered.gpkg")

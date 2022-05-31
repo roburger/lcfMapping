@@ -1,8 +1,10 @@
 # MSc Thesis
-# 09/02/2021
+# Start: 09/02/2021
+# Finalised: 31/05/2022
+
 # Process WUR change data
 
-# Set working directory
+# Set working directory (for yourself)
 setwd("~/Thesis/code/lcfMapping/")
 
 # Access libraries
@@ -17,7 +19,7 @@ source("utils/extractDates.R")
 source("utils/dataManagement.R")
 source("RFfunction.R")
 
-# Link to data folder
+# Link to data folder (for yourself)
 linkData <- "C:/Users/robur/Documents/Thesis/code/data/"
 
 
@@ -111,8 +113,9 @@ temp = cbind("location_id" = b1Filtered$location_id,
 ndviSF <- DFtoSF(temp, coords = c("sample_x","sample_y"), validation = TRUE) # first source
 st_write(ndviSF, "../data/processed/WURchangeVIs.gpkg", "NDVI")
 
+
 ##
-# Get temporal hrmonic metrics
+# Get temporal harmonic metrics
 
 # Apply function to get the harmonics of NDVI
 test = t(pbapply(as.matrix(ndvi), 1, getHarmonics))
@@ -140,6 +143,7 @@ change2018= subset(wurChangeCSV, dataYear=="2018")
 
 dataVali = loadChangeValidationData()
 loadChangeValidationData()
+
 
 ### 
 # Now split time series into yearly datasets
