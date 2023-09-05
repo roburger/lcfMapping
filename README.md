@@ -1,4 +1,4 @@
-# readmeTest
+# lcfMapping
 
 Repository for the MSc Thesis on land cover fraction mapping
 
